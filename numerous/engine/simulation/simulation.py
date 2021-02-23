@@ -71,6 +71,10 @@ class Simulation:
         print("Generating Numba Model")
         generation_start = time.time()
         numba_model = model.generate_numba_model(t_start, len(self.time))
+        if model.saved_variables is not None:
+
+            model.scope_vars_3d = model.saved_variables
+            numba_model.scope_vars_3d = model.saved_variables
 
         generation_finish = time.time()
         print("Generation time: ", generation_finish - generation_start)

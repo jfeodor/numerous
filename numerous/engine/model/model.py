@@ -86,6 +86,7 @@ class Model:
         self.external_mappings = ExternalMapping(external_mappings,
                                                  data_loader) if external_mappings else EmptyMapping()
         self.numba_callbacks_indicator = False
+        self.saved_variables = None
         self.numba_callbacks_init = []
         self.numba_callbacks_variables = []
         self.numba_callbacks = []
@@ -456,7 +457,15 @@ class Model:
                 if var.sum_mapping_id:
                     var.sum_mapping = self.scope_variables[var.sum_mapping_id]
 
-    # TODO: FIX THIS
+
+
+
+    def save_variables(self,filename):
+        np.save(filename, self.numba_model.scope_vars_3d)
+
+    def load_variables(self,filename):
+        self.saved_variables = np.load(filename)
+
     def restore_state(self, timestep=-1):
         """
 
