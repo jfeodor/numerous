@@ -47,21 +47,28 @@ class Simulation:
         self.time = time_
         self.model = model
 
+        def __run_even_by_id(solver, event_id, events_action, t):
+            self.model.update_local_variables()
+            ## slow code
+            list_var = [v.value for v in self.model.path_to_variable.values()]
+            events_action[event_id](t, list_var)
+            for i, var in enumerate(self.model.path_to_variable.values()):
+                var.value = list_var[i]
+            self.model.update_all_variables()
+            solver.y0 = self.model.states_as_vector
+
         def __end_step(solver, y, t, events_action, event_id=None):
             """
 
             """
             solver.y0 = y.flatten()
 
+            for callback_id in self.get_callbacks_id_for_timetamps():
+                __run_even_by_id(solver, callback_id, events_action, t)
+
             if event_id is not None:
-                self.model.update_local_variables()
-                ## slow code
-                list_var = [v.value for v in self.model.path_to_variable.values()]
-                events_action[event_id](t, list_var)
-                for i, var in enumerate(self.model.path_to_variable.values()):
-                    var.value = list_var[i]
-                self.model.update_all_variables()
-                solver.y0 = self.model.states_as_vector
+                __run_even_by_id(solver, event_id, events_action, t)
+
 
             else:
                 solver.numba_model.historian_update(t)
@@ -70,7 +77,7 @@ class Simulation:
                 if solver.numba_model.is_store_required():
                     self.model.store_history(numba_model.historian_data)
                     solver.numba_model.historian_reinit()
-                #
+
                 if solver.numba_model.is_external_data_update_needed(t):
                     solver.numba_model.is_external_data = self.model.external_mappings.load_new_external_data_batch(t)
                     if solver.numba_model.is_external_data:

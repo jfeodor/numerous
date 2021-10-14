@@ -1,6 +1,7 @@
 import ast
 import itertools
 from copy import copy
+from typing import Callable
 
 import numpy as np
 import time
@@ -695,6 +696,9 @@ class Model:
     def _generate_history_df(self, historian_data, rename_columns=True):
         data = self.create_historian_dict(historian_data)
         return AliasedDataFrame(data, aliases=self.aliases, rename_columns=True)
+
+    def add_callback(self, name: str, time_steps_array: npt.ArrayLike, action: Callable):
+        pass
 
 
 class AliasedDataFrame(pd.DataFrame):

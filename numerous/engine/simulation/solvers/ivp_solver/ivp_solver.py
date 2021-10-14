@@ -67,9 +67,10 @@ class IVP_solver(BaseSolver):
         stop_condition = False
         t_end = current_timestamp + delta_t
 
+
         while step_not_finished:
             t_eval = np.linspace(current_timestamp, t_end, self.num_inner + 1)
-
+            t_eval = np.sort(np.concatenate((t_eval, self.t_callback)))
             self.sol = solve_ivp(self.diff_function, (current_timestamp, t + delta_t), y0=self.y0, t_eval=t_eval,
                                  dense_output=False, events=self.eventf,
                                  **self.options)
