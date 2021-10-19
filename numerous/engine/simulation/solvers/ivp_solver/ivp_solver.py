@@ -17,6 +17,7 @@ class IVP_solver(BaseSolver):
         super().__init__()
         self.model = model
         self.time = time
+        self.t_callback= []
         self.eventf = []
         self.event_a = []
         for event_cond in events[0]:

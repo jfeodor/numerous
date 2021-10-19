@@ -44,10 +44,11 @@ class Simulation:
 
         time_, delta_t = np.linspace(t_start, t_stop, num + 1, retstep=True)
         self.callbacks = []
+        self.callback_time_steps = []
         self.time = time_
         self.model = model
 
-        def __run_even_by_id(solver, event_id, events_action, t):
+        def __run_event_by_id(solver, event_id, events_action, t):
             self.model.update_local_variables()
             ## slow code
             list_var = [v.value for v in self.model.path_to_variable.values()]
@@ -62,13 +63,12 @@ class Simulation:
 
             """
             solver.y0 = y.flatten()
-
-            for callback_id in self.get_callbacks_id_for_timetamps():
-                __run_even_by_id(solver, callback_id, events_action, t)
+            if t in self.callback_time_steps:
+                arg_id = self.callback_time_steps.index(t)
+                __run_event_by_id(solver, arg_id, events_action, t)
 
             if event_id is not None:
-                __run_even_by_id(solver, event_id, events_action, t)
-
+                __run_event_by_id(solver, event_id, events_action, t)
 
             else:
                 solver.numba_model.historian_update(t)
@@ -102,6 +102,7 @@ class Simulation:
                                      **kwargs)
 
         if solver_type.value == SolverType.NUMEROUS.value:
+
             event_function, event_directions = model.generate_event_condition_ast(True)
             action_function = model.generate_event_action_ast(True)
             self.solver = Numerous_solver(time_, delta_t, model, numba_model,

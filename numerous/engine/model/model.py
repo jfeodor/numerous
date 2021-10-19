@@ -13,7 +13,7 @@ from numba.core.registry import CPUDispatcher
 from numba.experimental import jitclass
 import pandas as pd
 
-from numerous.engine.model.events import generate_event_action_ast, generate_event_condition_ast
+from numerous.engine.model.events import generate_event_action_ast, generate_event_condition_ast, Event, EventType
 from numerous.engine.model.utils import Imports, njit_and_compile_function
 from numerous.engine.model.external_mappings import ExternalMapping, EmptyMapping
 
@@ -521,14 +521,19 @@ class Model:
                     return "{0}.{1}".format(registered_item.tag, result)
         return ""
 
-    def add_event(self, key, condition, action, terminal=True, direction=-1):
+    def add_event(self, key: str, condition, action, terminal=True, direction=-1):
         condition = self._replace_path_strings(condition, "state")
 
         condition.terminal = terminal
         condition.direction = direction
         action = self._replace_path_strings(action, "var")
+        event = Event(key, EventType.CONDITIONED_EVENT, action, timesteps=None, condition=condition)
+        self.events.append(event)
 
-        self.events.append((key, condition, action))
+    def add_callback(self, key: str, time_steps_array: npt.ArrayLike, action: Callable):
+        action = self._replace_path_strings(action, "var")
+        event = Event(key, EventType.TIME_EVENT, action, timesteps=time_steps_array, condition=None)
+        self.events.append(event)
 
     def generate_mock_event(self) -> None:
         def condition(t, v):
@@ -548,11 +553,12 @@ class Model:
             result = []
             directions = []
             for event in self.events:
-                compiled_event = njit_and_compile_function(event[1], self.imports.from_imports)
-                compiled_event.terminal = event[1].terminal
-                compiled_event.direction = event[1].direction
-                directions.append(event[1].direction)
-                result.append(compiled_event)
+                if event.event_type == EventType.CONDITIONED_EVENT:
+                    compiled_event = njit_and_compile_function(event.condition, self.imports.from_imports)
+                    compiled_event.terminal = event.condition.terminal
+                    compiled_event.direction = event.condition.direction
+                    directions.append(event.condition.direction)
+                    result.append(compiled_event)
             return result, np.array(directions)
 
     def generate_event_action_ast(self, is_numerous_solver: bool) -> list[CPUDispatcher]:
@@ -563,7 +569,7 @@ class Model:
         else:
             result = []
             for event in self.events:
-                compiled_event = njit_and_compile_function(event[2], self.imports.from_imports)
+                compiled_event = njit_and_compile_function(event.action, self.imports.from_imports)
                 result.append(compiled_event)
             return result
 
@@ -696,9 +702,6 @@ class Model:
     def _generate_history_df(self, historian_data, rename_columns=True):
         data = self.create_historian_dict(historian_data)
         return AliasedDataFrame(data, aliases=self.aliases, rename_columns=True)
-
-    def add_callback(self, name: str, time_steps_array: npt.ArrayLike, action: Callable):
-        pass
 
 
 class AliasedDataFrame(pd.DataFrame):

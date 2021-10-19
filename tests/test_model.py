@@ -258,7 +258,7 @@ def test_callback_step_item_model(ms3, solver, use_llvm):
 
 @pytest.mark.parametrize("solver", solver_types)
 @pytest.mark.parametrize("use_llvm", [True, False])
-def test_callback_step_item_model(ms3, solver, use_llvm):
+def test_callback_timestep_item_model(ms3, solver, use_llvm):
     def action(time, variables):
         if int(time) == 119:
             raise ValueError("Overflow of state. time:119")
@@ -271,8 +271,6 @@ def test_callback_step_item_model(ms3, solver, use_llvm):
     s1 = Simulation(m1, t_start=0, t_stop=1000, num=100, solver_type=solver)
     with pytest.raises(ValueError, match=r".*time:119.*"):
         s1.solve()
-
-
 
 
 def test_add_item_twice_with_same_tag(ms2):

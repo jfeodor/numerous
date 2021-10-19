@@ -1,4 +1,6 @@
 import ast
+from enum import Enum
+
 import numpy.typing as npt
 import numpy as np
 from numba.core.registry import CPUDispatcher
@@ -6,21 +8,38 @@ from numba.core.registry import CPUDispatcher
 from numerous.engine.model.utils import njit_and_compile_function
 
 
-def generate_event_condition_ast(event_functions: list[tuple[str, ast.FunctionDef, ast.FunctionDef]],
+class EventType(Enum):
+    TIME_EVENT = 0
+    CONDITIONED_EVENT = 1
+
+
+class Event:
+
+    def __init__(self, key, event_type, action, timesteps=None, condition=None):
+        self.condition = condition
+        self.event_type = event_type
+        self.key = key
+        self.timesteps = timesteps
+        self.action = action
+
+
+def generate_event_condition_ast(event_functions: list[Event],
                                  from_imports: list[tuple[str, str]]) -> tuple[list[CPUDispatcher], npt.ArrayLike]:
     array_label = "result"
     directions_array = []
     body = [ast.Assign(targets=[ast.Name(id=array_label)], lineno=0,
                        value=ast.List(elts=[], ctx=ast.Load()))]
 
-    for _, cond_fun, _ in event_functions:
-        directions_array.append(cond_fun.direction)
-        body.append(cond_fun)
-        body.append(ast.Expr(value=ast.Call(
-            func=ast.Attribute(value=ast.Name(id=array_label, ctx=ast.Load()), attr='append', ctx=ast.Load()),
-            args=[ast.Call(func=ast.Name(id=cond_fun.name, ctx=ast.Load()),
-                           args=[ast.Name(id='t', ctx=ast.Load()), ast.Name(id='states', ctx=ast.Load())],
-                           keywords=[])], keywords=[])))
+    for event in event_functions:
+        if event.event_type == EventType.CONDITIONED_EVENT:
+            cond_fun = event.condition
+            directions_array.append(cond_fun.direction)
+            body.append(cond_fun)
+            body.append(ast.Expr(value=ast.Call(
+                func=ast.Attribute(value=ast.Name(id=array_label, ctx=ast.Load()), attr='append', ctx=ast.Load()),
+                args=[ast.Call(func=ast.Name(id=cond_fun.name, ctx=ast.Load()),
+                               args=[ast.Name(id='t', ctx=ast.Load()), ast.Name(id='states', ctx=ast.Load())],
+                               keywords=[])], keywords=[])))
 
     body.append(ast.Return(value=ast.Call(func=ast.Attribute(value=ast.Name(id='np',
                                                                             ctx=ast.Load()), attr='array',
@@ -37,11 +56,12 @@ def generate_event_condition_ast(event_functions: list[tuple[str, ast.FunctionDe
     return [njit_and_compile_function(body_r, from_imports)], np.array(directions_array)
 
 
-def generate_event_action_ast(event_functions: list[tuple[str, ast.FunctionDef, ast.FunctionDef]],
+def generate_event_action_ast(event_functions: list[Event],
                               from_imports: list[tuple[str, str]]) -> CPUDispatcher:
     body = []
 
-    for idx, (_, _, action_fun) in enumerate(event_functions):
+    for idx, event in enumerate(event_functions):
+        action_fun = event.action
         body.append(action_fun)
         body.append(ast.If(test=ast.Compare(left=ast.Name(id='a_idx', ctx=ast.Load()), ops=[ast.Eq()],
                                             comparators=[ast.Constant(value=idx)]),
