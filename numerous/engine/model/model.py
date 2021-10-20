@@ -167,7 +167,7 @@ class Model:
         self.derivatives_idx = []
         self.scope_to_variables_idx = []
         self.numba_model = None
-
+        self.cond_events_count = 0
         self.info = {}
         if assemble:
             self.assemble()
@@ -528,6 +528,7 @@ class Model:
         condition.direction = direction
         action = self._replace_path_strings(action, "var")
         event = Event(key, EventType.CONDITIONED_EVENT, action, timesteps=None, condition=condition)
+        self.cond_events_count += 1
         self.events.append(event)
 
     def add_callback(self, key: str, time_steps_array: npt.ArrayLike, action: Callable):
@@ -545,15 +546,17 @@ class Model:
         self.add_event("mock", condition, action)
 
     def generate_event_condition_ast(self, is_numerous_solver: bool) -> tuple[list[CPUDispatcher], npt.ArrayLike]:
-        if len(self.events) == 0 and is_numerous_solver:
+        if self.cond_events_count == 0 and is_numerous_solver:
             self.generate_mock_event()
         if is_numerous_solver:
             return generate_event_condition_ast(self.events, self.imports.from_imports)
         else:
+            event_count = 0
             result = []
             directions = []
             for event in self.events:
                 if event.event_type == EventType.CONDITIONED_EVENT:
+                    event_count += 1
                     compiled_event = njit_and_compile_function(event.condition, self.imports.from_imports)
                     compiled_event.terminal = event.condition.terminal
                     compiled_event.direction = event.condition.direction
@@ -562,7 +565,7 @@ class Model:
             return result, np.array(directions)
 
     def generate_event_action_ast(self, is_numerous_solver: bool) -> list[CPUDispatcher]:
-        if len(self.events) == 0 and is_numerous_solver:
+        if self.cond_events_count == 0 and is_numerous_solver:
             self.generate_mock_event()
         if is_numerous_solver:
             return [generate_event_action_ast(self.events, self.imports.from_imports)]
