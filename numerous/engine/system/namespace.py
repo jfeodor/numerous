@@ -11,12 +11,13 @@ class VariableNamespaceBase:
 
     """
 
-    def __init__(self, item, tag, is_connector=False, _id=uuid.uuid1()):
+    def __init__(self, item, tag, is_connector=False, _id=uuid.uuid1(), active=True):
         self.items = [item.id]
         self.is_connector = is_connector
         self.item = item
         self.set_variables = []
         self.id = str(_id)
+        self.enabled=active
         # self.variable_scope = []
         ## -1 outgoing
         ## 0 no mapping
