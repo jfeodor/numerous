@@ -73,6 +73,8 @@ class Vardef:
         self.llvm = llvm
         self.args_order = []
         self.trgs_order = []
+        self.cnd=False
+        self.active=False
 
     def format(self, var, read=True):
         if read:

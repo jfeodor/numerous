@@ -248,10 +248,15 @@ class EquationGenerator:
                     args.append(self.search_in_item_scope(a, item_id))
 
             # Add this eq to the llvm_program
-            if hasattr(ext_func, 'cnd'):
-                if hasattr(ext_func,'active'):
+            ref_var=self.eq_vardefs[ext_func]
+            # self.eq_vardefs[ext_func].cnd
+            if hasattr(ref_var, 'cnd') and ref_var.cnd:
+                if hasattr(ref_var,'active'):
                     self.generated_program.add_conditional_call(self.get_external_function_name(ext_func), args, vardef.llvm_target_ids, ext_func.__name__, ext_func.active)
-            self.generated_program.add_call(self.get_external_function_name(ext_func), args, vardef.llvm_target_ids)
+                else:
+                    self.generated_program.add_call(self.get_external_function_name(ext_func), args, vardef.llvm_target_ids)
+            else:
+                self.generated_program.add_call(self.get_external_function_name(ext_func), args, vardef.llvm_target_ids)
 
     def _process_sum_node(self, n):
         t_indcs, target_edges = list(

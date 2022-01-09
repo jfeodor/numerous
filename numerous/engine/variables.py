@@ -26,7 +26,6 @@ class OverloadAction(Enum):
     RaiseError = 0
     SUM = 1
 
-
 @dataclass
 class VariableDescription:
     tag: str

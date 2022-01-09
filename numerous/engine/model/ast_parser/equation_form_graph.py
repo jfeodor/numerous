@@ -128,6 +128,7 @@ def function_from_graph_generic(g: MappingsGraph, var_def_, arg_metadata):
     decorators = []
     body = function_body_from_graph(g, var_def_)
     var_def_.order_variables(arg_metadata)
+    var_def_.cnd = g.cnd_call
     body.append(generate_return_statement(var_def_, g))
 
     args = ast.arguments(posonlyargs=[], args=var_def_.get_order_args(), vararg=None, defaults=[], kwonlyargs=[],
