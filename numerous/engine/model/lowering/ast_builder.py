@@ -80,6 +80,7 @@ class ASTBuilder:
 
         for i in self.body:
             if hasattr(i, 'cnd') and i.cnd:
+                print(i.body[0].__dict__)
                 arguments.append(ast.arg(arg=i.body[0].value.func.id+'_flag', annotation=None))
                 defaults.append(ast.Constant(i.active))
 

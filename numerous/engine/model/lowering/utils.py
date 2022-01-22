@@ -96,7 +96,7 @@ class Vardef:
         else:
             return ast.Name(id=var.replace('scope.', 's_'), lineno=0,col_offset=0, ctx=_ctx)
 
-    def order_variables(self, order_data):
+    def order_variables(self,  ):
         for (var, var_id, used) in order_data:
             if used:
                 self.args_order.append("scope." + var)

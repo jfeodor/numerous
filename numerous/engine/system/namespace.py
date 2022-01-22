@@ -51,6 +51,12 @@ class VariableNamespaceBase:
         else:
             object.__setattr__(self, name, value)
 
+    def get_enabled(self):
+        return self.enabled
+
+    def set_enabled(self, new_state):
+        self.enabled=new_state
+
     def create_variable(self, name):
         """
         Creates a variable in the namespaces with given name.

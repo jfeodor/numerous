@@ -76,6 +76,7 @@ class Item(Node):
 
         """
         new_namespace = VariableNamespace(self, tag, is_connector=isinstance(self, Connector), active=True)
+        setattr(new_namespace,"active",active)
         self.register_namespace(new_namespace)
         return new_namespace
 
@@ -163,7 +164,7 @@ class Item(Node):
 
         namespace = getattr(self, DEFAULT_NAMESPACE)
 
-        if name == DEFAULT_NAMESPACE:
+        if name == DEFAULT_NAMESPACE:X
             return namespace
 
         return getattr(namespace, name)
